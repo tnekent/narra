@@ -1,0 +1,15 @@
+{
+  "name": "narra",
+  "version": "1.0.0",
+  "description": "tree program in JavaScript",
+  "main": "index.js",
+  "keywords": [
+     "tree",
+     "recursive",
+     "program",
+     "commandline",
+     "directory"
+  ],
+  "author": "tnekent",
+  "license": "MIT"
+}
