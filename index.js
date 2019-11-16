@@ -1,4 +1,4 @@
-const { readdirSync, readlinkSync, lstatSync, statSync } = require("fs")
+const { readdirSync, readlinkSync, lstatSync, statSync, accessSync } = require("fs")
 const { resolve, basename } = require("path");
 
 const usage = `\
@@ -61,7 +61,9 @@ function main() {
         config = {
             writer: process.stdout
         };
-    let { writer } = config;
+    let { writer } = config,
+        restF = false;
+    let { stderr, exit } = process;
 
     for (const arg of args) {
         if (!restF && arg[0] === "-" && arg[1]) {
@@ -79,7 +81,6 @@ function main() {
                     exit(1);
             }
         } else paths.push(arg);
-        
     }
     if (!paths.length) paths.push("."); 
     for (const p of paths) {
@@ -87,8 +88,8 @@ function main() {
             accessSync(p);  
         } catch (e) {
             if (e.code === "ENOENT") {
-                process.stderr.write(`${p} [error opening dir]\n`)
-                process.exit(2);
+                stderr.write(`${p} [error opening dir]\n`)
+                exit(2);
             } else throw e; 
         }
         writer.write(`${p}\n`);

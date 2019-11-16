@@ -1,15 +1,22 @@
 {
-  "name": "narra",
-  "version": "1.0.0",
-  "description": "tree program in JavaScript",
-  "main": "index.js",
-  "keywords": [
-     "tree",
-     "recursive",
-     "program",
-     "commandline",
-     "directory"
-  ],
-  "author": "tnekent",
-  "license": "MIT"
+   "name": "narra",
+   "version": "1.0.1",
+   "description": "tree program in JavaScript",
+   "main": "index.js",
+   "keywords": [
+      "tree",
+      "recursive",
+      "program",
+      "commandline",
+      "directory"
+   ],
+   "bin": {
+      "narra": "./index.js"
+   },
+   "author": "tnekent",
+   "license": "MIT",
+   "repository": {
+      "type": "git",
+      "url": "git+https://github.com/tnekent/narra.git"
+   }
 }
