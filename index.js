@@ -6,6 +6,8 @@ usage: narra [<directory list>]
 `
 // XXX: use global?
 const resolvedLinks = new Set();
+let filecount = 0,
+    dircount = 0;
 
 function recurseDirs(path, config, prefix = "") {
     let ents = readdirSync(path),
@@ -28,8 +30,11 @@ function recurseDirs(path, config, prefix = "") {
         }
 
         writer.write("\n");
-        if (type === "dir") recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`)
-        
+        if (type === "file") filecount++;
+        if (type === "dir") {
+            recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`)
+            dircount++;
+        }
     }
 }
 
@@ -95,6 +100,7 @@ function main() {
         writer.write(`${p}\n`);
         recurseDirs(p, config);
     }
+    writer.write(`\n${dircount} director${dircount === 1 ? "y" : "ies"}, ${filecount} file${filecount === 1 ? "" : "s"}\n`);
 }
 
 main()
