@@ -1,6 +1,6 @@
 {
    "name": "narra",
-   "version": "1.0.2",
+   "version": "1.0.3",
    "description": "tree program in JavaScript",
    "main": "index.js",
    "keywords": [
