@@ -26,10 +26,13 @@ function getFtype(stats) {
         : stats.isSymbolicLink() ? IS_LINK : IS_FILE;
 }
 
-function filterDirs(ents, path) {
+function filterDirs(ents, path, config) {
     let filtered = [];
 
     for (const e of ents) {
+        // Works only if `e` is not a full path
+        if (!config.all && e[0] === ".") continue;
+
         let fpath = resolve(path, e),
             type = getFtype(lstatSync(fpath)),
             desc = { type, fpath, lpath: null }
@@ -47,7 +50,7 @@ function recurseDirs(path, config, prefix = "") {
     let ents = readdirSync(path),
         { writer } = config;
 
-    ents = filterDirs(ents, path);
+    ents = filterDirs(ents, path, config);
     for (let i = 0, len = ents.length; i < len; i++) {
         let { type, fpath, lpath } = ents[i]
         writer.write(`\n${prefix}${i === len - 1 ? "└── " : "├── "}${basename(fpath)}`)
@@ -75,22 +78,31 @@ function main() {
     let args = process.argv.slice(2),
         paths = [],
         config = {
-            writer: process.stdout
+            writer: process.stdout,
+            all: false
         };
     let { writer } = config,
         restF = false;
 
-    for (const arg of args) {
+    let i = 0, n = 0, len = args.length;
+    for (; i < len; i = n) {
+        n++;
+        let arg = args[i];
         if (!restF && arg[0] === "-" && arg[1]) {
-            switch (arg[1]) {
-                case "h":
-                    errorAndExit(0, usage);
-                    break;
-                case "-":
-                    restF = true;
-                    break;
-                default:
-                    errorAndExit(1, `-${arg[1]} not implemented\n`, usage);
+            for (const letter of arg.slice(1)) {
+                switch (letter) {
+                    case "h":
+                        errorAndExit(0, usage);
+                        break;
+                    case "-":
+                        restF = true;
+                        break;
+                    case "a":
+                        config.all = true;
+                        break;
+                    default:
+                        errorAndExit(1, `-${letter} not implemented\n`, usage);
+                }
             }
         } else paths.push(arg);
     }
