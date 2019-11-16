@@ -27,7 +27,7 @@ function recurseDirs(path, config, prefix = "") {
         if (type & IS_LINK) {
             fpath = resolve(path, lpath);
             writer.write(` -> ${lpath}`)
-            if (resolvedLinks.has(fpath)) {
+            if (type & IS_DIR && resolvedLinks.has(fpath)) {
                 writer.write(" [recursive, not followed]\n");
                 continue;
             } else resolvedLinks.add(fpath);
