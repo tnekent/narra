@@ -28,6 +28,7 @@ function recurseDirs(path, config, prefix = "") {
             fpath = resolve(path, lpath);
             writer.write(` -> ${lpath}`)
             if (type & IS_DIR && resolvedLinks.has(fpath)) {
+                dircount++;
                 writer.write(" [recursive, not followed]\n");
                 continue;
             } else resolvedLinks.add(fpath);
