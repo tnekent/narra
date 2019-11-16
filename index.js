@@ -4,6 +4,12 @@ const { resolve, basename } = require("path");
 const usage = `\
 usage: narra [<directory list>]
 `
+const IS_FILE = 1,
+    IS_DIR = 2,
+    IS_LINK = 4;
+const { stderr, exit } = process;
+
+
 // XXX: use global?
 const resolvedLinks = new Set();
 let filecount = 0,
@@ -15,23 +21,21 @@ function recurseDirs(path, config, prefix = "") {
 
     ents = filterDirs(ents, path);
     for (let i = 0, len = ents.length; i < len; i++) {
-        let { type, fpath, rpath, rtype } = ents[i]
+        let { type, fpath, lpath } = ents[i]
         writer.write(`${prefix}${i === len - 1 ? "└── " : "├── "}${basename(fpath)}`)
 
-        if (type === "link") {
-            fpath = resolve(path, rpath);
-            writer.write(` -> ${rpath}`)
+        if (type & IS_LINK) {
+            fpath = resolve(path, lpath);
+            writer.write(` -> ${lpath}`)
             if (resolvedLinks.has(fpath)) {
                 writer.write(" [recursive, not followed]\n");
                 continue;
             } else resolvedLinks.add(fpath);
-            
-            type = rtype;
         }
 
         writer.write("\n");
-        if (type === "file") filecount++;
-        if (type === "dir") {
+        if (type & IS_FILE) filecount++;
+        if (type & IS_DIR) {
             recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`)
             dircount++;
         }
@@ -44,11 +48,11 @@ function filterDirs(ents, path) {
     for (const e of ents) {
         let fpath = resolve(path, e),
             type = getFtype(lstatSync(fpath)),
-            desc = { type, fpath, rpath: "", rtype: "" }
+            desc = { type, fpath, lpath: null }
 		
-        if (type === "link") {
-            desc.rpath = readlinkSync(fpath);
-            desc.rtype = getFtype(statSync(fpath));
+        if (type & IS_LINK) {
+            desc.lpath = readlinkSync(fpath);
+            desc.type |= getFtype(statSync(fpath));
         }
         filtered.push(desc);
     }
@@ -56,8 +60,8 @@ function filterDirs(ents, path) {
 }
 
 function getFtype(stats) {
-    return stats.isDirectory() ? "dir"
-        : stats.isSymbolicLink() ? "link" : "file"
+    return stats.isDirectory() ? IS_DIR
+        : stats.isSymbolicLink() ? IS_LINK : IS_FILE;
 }
 
 function main() {
@@ -68,7 +72,6 @@ function main() {
         };
     let { writer } = config,
         restF = false;
-    let { stderr, exit } = process;
 
     for (const arg of args) {
         if (!restF && arg[0] === "-" && arg[1]) {
