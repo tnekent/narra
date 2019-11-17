@@ -15,32 +15,15 @@ const resolvedLinks = new Set();
 let filecount = 0,
     dircount = 0;
 
-function recurseDirs(path, config, prefix = "") {
-    let ents = readdirSync(path),
-        { writer } = config;
+function errorAndExit(code, msgs) {
+    for (const msg of msgs)
+        stderr.write(msg);
+    exit(code);
+}
 
-    ents = filterDirs(ents, path);
-    for (let i = 0, len = ents.length; i < len; i++) {
-        let { type, fpath, lpath } = ents[i]
-        writer.write(`${prefix}${i === len - 1 ? "└── " : "├── "}${basename(fpath)}`)
-
-        if (type & IS_LINK) {
-            fpath = resolve(path, lpath);
-            writer.write(` -> ${lpath}`)
-            if (type & IS_DIR && resolvedLinks.has(fpath)) {
-                dircount++;
-                writer.write(" [recursive, not followed]\n");
-                continue;
-            } else resolvedLinks.add(fpath);
-        }
-
-        writer.write("\n");
-        if (type & IS_FILE) filecount++;
-        if (type & IS_DIR) {
-            recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`)
-            dircount++;
-        }
-    }
+function getFtype(stats) {
+    return stats.isDirectory() ? IS_DIR
+        : stats.isSymbolicLink() ? IS_LINK : IS_FILE;
 }
 
 function filterDirs(ents, path) {
@@ -60,10 +43,33 @@ function filterDirs(ents, path) {
     return filtered;
 }
 
-function getFtype(stats) {
-    return stats.isDirectory() ? IS_DIR
-        : stats.isSymbolicLink() ? IS_LINK : IS_FILE;
+function recurseDirs(path, config, prefix = "") {
+    let ents = readdirSync(path),
+        { writer } = config;
+
+    ents = filterDirs(ents, path);
+    for (let i = 0, len = ents.length; i < len; i++) {
+        let { type, fpath, lpath } = ents[i]
+        writer.write(`\n${prefix}${i === len - 1 ? "└── " : "├── "}${basename(fpath)}`)
+
+        if (type & IS_LINK) {
+            fpath = resolve(path, lpath);
+            writer.write(` -> ${lpath}`)
+            if (type & IS_DIR && resolvedLinks.has(fpath)) {
+                dircount++;
+                writer.write(" [recursive, not followed]");
+                continue;
+            } else resolvedLinks.add(fpath);
+        }
+
+        if (type & IS_FILE) filecount++;
+        if (type & IS_DIR) {
+            recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`)
+            dircount++;
+        }
+    }
 }
+
 
 function main() {
     let args = process.argv.slice(2),
@@ -78,16 +84,13 @@ function main() {
         if (!restF && arg[0] === "-" && arg[1]) {
             switch (arg[1]) {
                 case "h":
-                    stderr.write(usage);
-                    exit(0);
+                    errorAndExit(0, usage);
                     break;
                 case "-":
                     restF = true;
                     break;
                 default:
-                    stderr.write(`-${arg[1]} not implemented\n`)
-                    stderr.write(usage);
-                    exit(1);
+                    errorAndExit(1, `-${arg[1]} not implemented\n`, usage);
             }
         } else paths.push(arg);
     }
@@ -96,15 +99,14 @@ function main() {
         try {
             accessSync(p);  
         } catch (e) {
-            if (e.code === "ENOENT") {
-                stderr.write(`${p} [error opening dir]\n`)
-                exit(2);
-            } else throw e; 
+            if (e.code === "ENOENT")
+                errorAndExit(2, `${p} [error opening dir]\n`);
+            else throw e; 
         }
         writer.write(`${p}\n`);
         recurseDirs(p, config);
     }
-    writer.write(`\n${dircount} director${dircount === 1 ? "y" : "ies"}, ${filecount} file${filecount === 1 ? "" : "s"}\n`);
+    writer.write(`\n\n${dircount} director${dircount === 1 ? "y" : "ies"}, ${filecount} file${filecount === 1 ? "" : "s"}\n`);
 }
 
 main()
