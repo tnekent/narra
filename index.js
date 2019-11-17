@@ -48,7 +48,7 @@ function filterDirs(ents, path, config) {
 
 function recurseDirs(path, config, prefix = "") {
     let ents = readdirSync(path),
-        { writer, follow } = config;
+        { writer, follow, levels } = config;
 
     ents = filterDirs(ents, path, config);
     for (let i = 0, len = ents.length; i < len; i++) {
@@ -70,7 +70,8 @@ function recurseDirs(path, config, prefix = "") {
                     continue;
                 } else resolvedLinks.add(fpath);
             }
-            recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`)
+            if (levels !== -1) config.levels = levels - 1;
+            if (levels) recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`)
         }
     }
 }
@@ -82,7 +83,8 @@ function main() {
         config = {
             writer: process.stdout,
             all: false,
-            follow: false
+            follow: false,
+            levels: -1
         };
     let { writer } = config,
         restF = false;
@@ -106,6 +108,15 @@ function main() {
                     case "l":
                         config.follow = true;
                         break;
+                    case "L": {
+                        let l = args[n++];
+                        if (!l)
+                            errorAndExit(1, "missing argument to -L\n");
+                        else if (Number.isNaN(l = +l) || --l < 0)
+                            errorAndExit(1, "invalid level, must be greater than zero\n");
+                        config.levels = l;
+                    }
+                    break;
                     default:
                         errorAndExit(1, `-${letter} not implemented\n`, usage);
                 }
