@@ -48,7 +48,7 @@ function filterDirs(ents, path, config) {
 
 function recurseDirs(path, config, prefix = "") {
     let ents = readdirSync(path),
-        { writer } = config;
+        { writer, follow } = config;
 
     ents = filterDirs(ents, path, config);
     for (let i = 0, len = ents.length; i < len; i++) {
@@ -58,17 +58,19 @@ function recurseDirs(path, config, prefix = "") {
         if (type & IS_LINK) {
             fpath = resolve(path, lpath);
             writer.write(` -> ${lpath}`)
-            if (type & IS_DIR && resolvedLinks.has(fpath)) {
-                dircount++;
-                writer.write(" [recursive, not followed]");
-                continue;
-            } else resolvedLinks.add(fpath);
         }
 
         if (type & IS_FILE) filecount++;
-        if (type & IS_DIR) {
-            recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`)
+        else if (type & IS_DIR) {
             dircount++;
+            if (type & IS_LINK) {
+                if (!follow) continue;
+                else if (resolvedLinks.has(fpath)) {
+                    writer.write(" [recursive, not followed]");
+                    continue;
+                } else resolvedLinks.add(fpath);
+            }
+            recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`)
         }
     }
 }
@@ -79,7 +81,8 @@ function main() {
         paths = [],
         config = {
             writer: process.stdout,
-            all: false
+            all: false,
+            follow: false
         };
     let { writer } = config,
         restF = false;
@@ -99,6 +102,9 @@ function main() {
                         break;
                     case "a":
                         config.all = true;
+                        break;
+                    case "l":
+                        config.follow = true;
                         break;
                     default:
                         errorAndExit(1, `-${letter} not implemented\n`, usage);
