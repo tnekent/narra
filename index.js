@@ -26,10 +26,13 @@ function getFtype(stats) {
         : stats.isSymbolicLink() ? IS_LINK : IS_FILE;
 }
 
-function filterDirs(ents, path) {
+function filterDirs(ents, path, config) {
     let filtered = [];
 
     for (const e of ents) {
+        // Works only if `e` is not a full path
+        if (!config.all && e[0] === ".") continue;
+
         let fpath = resolve(path, e),
             type = getFtype(lstatSync(fpath)),
             desc = { type, fpath, lpath: null }
@@ -45,9 +48,9 @@ function filterDirs(ents, path) {
 
 function recurseDirs(path, config, prefix = "") {
     let ents = readdirSync(path),
-        { writer } = config;
+        { writer, follow, levels } = config;
 
-    ents = filterDirs(ents, path);
+    ents = filterDirs(ents, path, config);
     for (let i = 0, len = ents.length; i < len; i++) {
         let { type, fpath, lpath } = ents[i]
         writer.write(`\n${prefix}${i === len - 1 ? "└── " : "├── "}${basename(fpath)}`)
@@ -55,17 +58,20 @@ function recurseDirs(path, config, prefix = "") {
         if (type & IS_LINK) {
             fpath = resolve(path, lpath);
             writer.write(` -> ${lpath}`)
-            if (type & IS_DIR && resolvedLinks.has(fpath)) {
-                dircount++;
-                writer.write(" [recursive, not followed]");
-                continue;
-            } else resolvedLinks.add(fpath);
         }
 
         if (type & IS_FILE) filecount++;
-        if (type & IS_DIR) {
-            recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`)
+        else if (type & IS_DIR) {
             dircount++;
+            if (type & IS_LINK) {
+                if (!follow) continue;
+                else if (resolvedLinks.has(fpath)) {
+                    writer.write(" [recursive, not followed]");
+                    continue;
+                } else resolvedLinks.add(fpath);
+            }
+            if (levels !== -1) config.levels = levels - 1;
+            if (levels) recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`)
         }
     }
 }
@@ -75,22 +81,45 @@ function main() {
     let args = process.argv.slice(2),
         paths = [],
         config = {
-            writer: process.stdout
+            writer: process.stdout,
+            all: false,
+            follow: false,
+            levels: -1
         };
     let { writer } = config,
         restF = false;
 
-    for (const arg of args) {
+    let i = 0, n = 0, len = args.length;
+    for (; i < len; i = n) {
+        n++;
+        let arg = args[i];
         if (!restF && arg[0] === "-" && arg[1]) {
-            switch (arg[1]) {
-                case "h":
-                    errorAndExit(0, usage);
+            for (const letter of arg.slice(1)) {
+                switch (letter) {
+                    case "h":
+                        errorAndExit(0, usage);
+                        break;
+                    case "-":
+                        restF = true;
+                        break;
+                    case "a":
+                        config.all = true;
+                        break;
+                    case "l":
+                        config.follow = true;
+                        break;
+                    case "L": {
+                        let l = args[n++];
+                        if (!l)
+                            errorAndExit(1, "missing argument to -L\n");
+                        else if (Number.isNaN(l = +l) || --l < 0)
+                            errorAndExit(1, "invalid level, must be greater than zero\n");
+                        config.levels = l;
+                    }
                     break;
-                case "-":
-                    restF = true;
-                    break;
-                default:
-                    errorAndExit(1, `-${arg[1]} not implemented\n`, usage);
+                    default:
+                        errorAndExit(1, `-${letter} not implemented\n`, usage);
+                }
             }
         } else paths.push(arg);
     }
