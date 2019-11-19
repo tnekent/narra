@@ -108,14 +108,14 @@ function main() {
                     case "L": {
                         let l = args[n++];
                         if (!l)
-                            errorAndExit(1, "missing argument to -L\n");
+                            errorAndExit(1, "narra: missing argument to -L\n");
                         else if (Number.isNaN(l = Number(l)) || --l < 0)
-                            errorAndExit(1, "invalid level, must be greater than zero\n");
+                            errorAndExit(1, "narra: invalid level, must be greater than zero\n");
                         config.levels = l;
                     }
                         break;
                     default:
-                        errorAndExit(1, `-${letter} not implemented\n`, usage);
+                        errorAndExit(1, `narra: -${letter} not implemented\n`, usage);
                 }
             }
         } else paths.push(arg);
