@@ -3,9 +3,12 @@ Tree, a recursive directory listing program, ported in JavaScript;
 
 ## Usage
 ```
-usage: narra [-h] [<directory list>]
+usage: narra [-h] [-la] [-L <levels>] [<directory list>]
 
--h	print help message and exit
+-h	   print this help message and exit
+-a         include dot-prefixed files
+-l	   follow symbolic links
+-L <level> descend only \`level\` directories
 ```
 
 ## Contribution
