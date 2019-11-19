@@ -1,7 +1,15 @@
 const { readdirSync, readlinkSync, lstatSync, statSync, accessSync } = require("fs")
 
-const usage = `\
-usage: narra [<directory list>]
+const usage = `
+usage: narra [-h] [-la] [-L <levels>] [<directory list>]
+`
+const help = `\
+${usage}
+
+-h	   print this help message and exit
+-a         include dot-prefixed files
+-l	   follow symbolic links
+-L <level> descend only \`level\` directories
 `
 const IS_FILE = 1,
     IS_DIR = 2,
@@ -94,7 +102,7 @@ function main() {
             for (const letter of arg.slice(1)) {
                 switch (letter) {
                     case "h":
-                        errorAndExit(0, usage);
+                        errorAndExit(0, help);
                         break;
                     case "-":
                         restF = true;
