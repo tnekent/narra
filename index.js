@@ -103,7 +103,7 @@ function main() {
                 errorAndExit(2, `${p} [error opening dir]\n`);
             else throw e; 
         }
-        writer.write(`${p}\n`);
+        writer.write(p);
         recurseDirs(p, config);
     }
     writer.write(`\n\n${dircount} director${dircount === 1 ? "y" : "ies"}, ${filecount} file${filecount === 1 ? "" : "s"}\n`);
