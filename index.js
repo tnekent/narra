@@ -1,5 +1,4 @@
 const { readdirSync, readlinkSync, lstatSync, statSync, accessSync } = require("fs")
-const { resolve, basename } = require("path");
 
 const usage = `\
 usage: narra [<directory list>]
@@ -9,8 +8,6 @@ const IS_FILE = 1,
     IS_LINK = 4;
 const { stderr, exit } = process;
 
-
-// XXX: use global?
 const resolvedLinks = new Set();
 let filecount = 0,
     dircount = 0;
@@ -33,9 +30,9 @@ function filterDirs(ents, path, config) {
         // Works only if `e` is not a full path
         if (!config.all && e[0] === ".") continue;
 
-        let fpath = resolve(path, e),
+        let fpath = `${path}/${e}`,
             type = getFtype(lstatSync(fpath)),
-            desc = { type, fpath, lpath: null }
+            desc = { type, bpath: e, fpath, lpath: null }
 		
         if (type & IS_LINK) {
             desc.lpath = readlinkSync(fpath);
@@ -52,11 +49,11 @@ function recurseDirs(path, config, prefix = "") {
 
     ents = filterDirs(ents, path, config);
     for (let i = 0, len = ents.length; i < len; i++) {
-        let { type, fpath, lpath } = ents[i]
-        writer.write(`\n${prefix}${i === len - 1 ? "└── " : "├── "}${basename(fpath)}`)
+        let { type, bpath, fpath, lpath } = ents[i]
+        writer.write(`\n${prefix}${i === len - 1 ? "└── " : "├── "}${bpath}`)
 
         if (type & IS_LINK) {
-            fpath = resolve(path, lpath);
+            fpath = lpath[0] === "/" ? lpath : `${path}/${lpath}`;
             writer.write(` -> ${lpath}`)
         }
 
@@ -112,11 +109,11 @@ function main() {
                         let l = args[n++];
                         if (!l)
                             errorAndExit(1, "missing argument to -L\n");
-                        else if (Number.isNaN(l = +l) || --l < 0)
+                        else if (Number.isNaN(l = Number(l)) || --l < 0)
                             errorAndExit(1, "invalid level, must be greater than zero\n");
                         config.levels = l;
                     }
-                    break;
+                        break;
                     default:
                         errorAndExit(1, `-${letter} not implemented\n`, usage);
                 }
@@ -138,4 +135,4 @@ function main() {
     writer.write(`\n\n${dircount} director${dircount === 1 ? "y" : "ies"}, ${filecount} file${filecount === 1 ? "" : "s"}\n`);
 }
 
-main()
+main();
