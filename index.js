@@ -139,8 +139,9 @@ function main() {
         }
         writer.write(p);
         recurseDirs(p, config);
+        writer.write("\n");
     }
-    writer.write(`\n\n${dircount} director${dircount === 1 ? "y" : "ies"}, ${filecount} file${filecount === 1 ? "" : "s"}\n`);
+    writer.write(`\n${dircount} director${dircount === 1 ? "y" : "ies"}, ${filecount} file${filecount === 1 ? "" : "s"}\n`);
 }
 
 main();
