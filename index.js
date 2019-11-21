@@ -1,8 +1,8 @@
-const { readdirSync, readlinkSync, lstatSync, statSync, accessSync } = require("fs")
+const { readdirSync, readlinkSync, lstatSync, statSync, accessSync } = require("fs");
 
 const usage = `
 usage: narra [-h] [-la] [-L <levels>] [<directory list>]
-`
+`;
 const help = `\
 ${usage}
 
@@ -10,15 +10,30 @@ ${usage}
 -a         include dot-prefixed files
 -l	   follow symbolic links
 -L <level> descend only \`level\` directories
-`
+`;
 const IS_FILE = 1,
     IS_DIR = 2,
     IS_LINK = 4;
 const { stderr, exit } = process;
+const inotable = [];
 
-const resolvedLinks = new Set();
 let filecount = 0,
     dircount = 0;
+
+function saveIno(dev, inode) {
+    let hash = inode & 255;
+    if (!inotable[hash]) inotable[hash] = [];
+    inotable[hash].push([dev, inode]);
+}
+
+function existsIno(dev, inode) {
+    let hash = inode & 255;
+    if (!inotable[hash]) return false;
+    for (const ino of inotable[hash]) 
+        if (ino[0] === dev && ino[1] === inode) return true;
+    
+    return false;
+}
 
 function errorAndExit(code, msgs) {
     for (const msg of msgs)
@@ -39,12 +54,19 @@ function filterDirs(ents, path, config) {
         if (!config.all && e[0] === ".") continue;
 
         let fpath = `${path}/${e}`,
-            type = getFtype(lstatSync(fpath)),
-            desc = { type, bpath: e, fpath, lpath: null }
+            st = lstatSync(fpath),
+            type = getFtype(st),
+            desc = { type, bpath: e, fpath, lpath: null, dev: null, inode: null };
 		
         if (type & IS_LINK) {
+            st = statSync(fpath);
             desc.lpath = readlinkSync(fpath);
-            desc.type |= getFtype(statSync(fpath));
+            desc.type |= getFtype(st);
+            desc.dev = st.dev;
+            desc.inode = st.ino;
+        } else if (type & IS_DIR) {
+            desc.dev = st.dev;
+            desc.inode = st.ino;
         }
         filtered.push(desc);
     }
@@ -57,12 +79,12 @@ function recurseDirs(path, config, prefix = "") {
 
     ents = filterDirs(ents, path, config);
     for (let i = 0, len = ents.length; i < len; i++) {
-        let { type, bpath, fpath, lpath } = ents[i]
-        writer.write(`\n${prefix}${i === len - 1 ? "└── " : "├── "}${bpath}`)
+        let { type, bpath, fpath, lpath, dev, inode } = ents[i];
+        writer.write(`\n${prefix}${i === len - 1 ? "└── " : "├── "}${bpath}`);
 
         if (type & IS_LINK) {
             fpath = lpath[0] === "/" ? lpath : `${path}/${lpath}`;
-            writer.write(` -> ${lpath}`)
+            writer.write(` -> ${lpath}`);
         }
 
         if (type & IS_FILE) filecount++;
@@ -70,13 +92,16 @@ function recurseDirs(path, config, prefix = "") {
             dircount++;
             if (type & IS_LINK) {
                 if (!follow) continue;
-                else if (resolvedLinks.has(fpath)) {
+                else if (existsIno(dev, inode)) {
                     writer.write(" [recursive, not followed]");
                     continue;
-                } else resolvedLinks.add(fpath);
+                } else saveIno(dev, inode);
             }
             if (levels !== -1) config.levels = levels - 1;
-            if (levels) recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`)
+            if (levels) {
+                saveIno(dev, inode);
+                recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`);
+            }
         }
     }
 }
