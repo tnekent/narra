@@ -14,9 +14,17 @@ function getFtype(stats) {
 } 
 
 function saveIno(inotable, dev, inode) {
-    let hash = inode & 255;
-    if (!inotable[hash]) inotable[hash] = [];
-    inotable[hash].push([dev, inode]);
+    let hash = inode & 255,
+        inop = inotable[hash];
+    if (!inop) {
+        inotable[hash] = [[dev, inode]];
+        return;
+    }
+    for (let i = 0, len = inop.length; i < len; i++) {
+        let c = inop[i];
+        if (c[0] === dev && c[1] === inode) return;
+    }
+    inop.push([dev, inode]);
 }
 
 function existsIno(inotable, dev, inode) {
