@@ -23,7 +23,8 @@ function main() {
             follow: false,
             levels: -1,
             fullpath: false,
-            dirsOnly: false
+            dirsOnly: false,
+            xdev: false
         };
     let { writer } = config,
         restF = false;
@@ -61,6 +62,9 @@ function main() {
                         break;
                     case "f":
                         config.fullpath = true;
+                        break;
+                    case "x":
+                        config.xdev = true;
                         break;
                     default:
                         errorAndExit(1, `narra: -${letter} not implemented\n`, usage);

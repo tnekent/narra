@@ -4,6 +4,7 @@ const { IS_FILE, IS_LINK, IS_DIR, getFtype, saveIno, existsIno } = require("./ut
 let filecount = 0, dircount = 0;
 let config;
 let inotable = [];
+let xdev;
 
 function filterDirs(ents, path) {
     let filtered = [];
@@ -58,6 +59,7 @@ function recurseDirs(path, prefix = "") {
         if (type & IS_FILE) filecount++;
         else if (type & IS_DIR) {
             dircount++;
+            if (dev !== xdev) continue;
             if (type & IS_LINK) {
                 if (!follow) continue;
                 else if (existsIno(inotable, dev, inode)) {
@@ -75,6 +77,7 @@ function recurseDirs(path, prefix = "") {
 }
 
 function traverseDownFrom(path, _config) {
+    if (_config.xdev) xdev = statSync(path).dev;
     config = { ..._config };
     recurseDirs(path);
     return [filecount, dircount];   
