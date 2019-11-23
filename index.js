@@ -22,6 +22,7 @@ function main() {
             all: false,
             follow: false,
             levels: -1,
+            fullpath: false,
             dirsOnly: false
         };
     let { writer } = config,
@@ -57,6 +58,9 @@ function main() {
                         break;
                     case "d":
                         config.dirsOnly = true;
+                        break;
+                    case "f":
+                        config.fullpath = true;
                         break;
                     default:
                         errorAndExit(1, `narra: -${letter} not implemented\n`, usage);
