@@ -21,7 +21,8 @@ function main() {
             writer: process.stdout,
             all: false,
             follow: false,
-            levels: -1
+            levels: -1,
+            dirsOnly: false
         };
     let { writer } = config,
         restF = false;
@@ -54,6 +55,9 @@ function main() {
                         config.levels = l;
                     }
                         break;
+                    case "d":
+                        config.dirsOnly = true;
+                        break;
                     default:
                         errorAndExit(1, `narra: -${letter} not implemented\n`, usage);
                 }
@@ -74,7 +78,9 @@ function main() {
         [filecount, dircount] = traverseDownFrom(p, config);
         writer.write("\n");
     }
-    writer.write(`\n${dircount} director${dircount === 1 ? "y" : "ies"}, ${filecount} file${filecount === 1 ? "" : "s"}\n`);
+    writer.write(`\n${dircount} director${dircount === 1 ? "y" : "ies"}`);
+    if (!config.dirsOnly) writer.write(`, ${filecount} file${filecount === 1 ? "" : "s"}`);
+    writer.write("\n");
 }
 
 main();
