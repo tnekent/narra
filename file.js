@@ -7,15 +7,17 @@ let inotable = [];
 
 function filterDirs(ents, path) {
     let filtered = [];
+    let { all, dirsOnly } = config;
 
     for (const e of ents) {
         // Works only if `e` is not a full path
-        if (!config.all && e[0] === ".") continue;
+        if (!all && e[0] === ".") continue;
 
         let fpath = `${path}/${e}`,
             st = lstatSync(fpath),
-            type = getFtype(st),
-            desc = { type, bpath: e, fpath, lpath: null, dev: null, inode: null };
+            type = getFtype(st);
+        if (dirsOnly && type & IS_FILE) continue;
+        let desc = { type, bpath: e, fpath, lpath: null, dev: null, inode: null };
 		
         if (type & IS_LINK) {
             try {
@@ -25,8 +27,9 @@ function filterDirs(ents, path) {
                 if (err.code === "ENOENT") desc.type |= IS_FILE;
                 else throw err;
             }
-            desc.lpath = readlinkSync(fpath);
             desc.type |= getFtype(st);
+            if (dirsOnly && desc.type & IS_FILE) continue;
+            desc.lpath = readlinkSync(fpath);
             desc.dev = st.dev;
             desc.inode = st.ino;
         } else if (type & IS_DIR) {
