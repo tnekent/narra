@@ -43,12 +43,12 @@ function filterDirs(ents, path) {
 
 function recurseDirs(path, prefix = "") {
     let ents = readdirSync(path),
-        { writer, follow, levels } = config;
+        { writer, follow, levels, fullpath } = config;
 
     ents = filterDirs(ents, path);
     for (let i = 0, len = ents.length; i < len; i++) {
         let { type, bpath, fpath, lpath, dev, inode } = ents[i];
-        writer.write(`\n${prefix}${i === len - 1 ? "└── " : "├── "}${bpath}`);
+        writer.write(`\n${prefix}${i === len - 1 ? "└── " : "├── "}${fullpath ? fpath : bpath}`);
 
         if (type & IS_LINK) {
             fpath = lpath[0] === "/" ? lpath : `${path}/${lpath}`;
