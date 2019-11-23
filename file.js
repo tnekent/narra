@@ -18,7 +18,13 @@ function filterDirs(ents, path) {
             desc = { type, bpath: e, fpath, lpath: null, dev: null, inode: null };
 		
         if (type & IS_LINK) {
-            st = statSync(fpath);
+            try {
+                st = statSync(fpath);
+            } catch (err) {
+                // Symlink is an orphan
+                if (err.code === "ENOENT") desc.type |= IS_FILE;
+                else throw err;
+            }
             desc.lpath = readlinkSync(fpath);
             desc.type |= getFtype(st);
             desc.dev = st.dev;
