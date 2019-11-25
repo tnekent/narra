@@ -8,10 +8,13 @@ usage: narra [-h] [-la] [-L <levels>] [<directory list>]
 const help = `\
 ${usage}
 
--h         print this help message and exit
+-h	   print this help message and exit
 -a         include dot-prefixed files
--l         follow symbolic links
+-l	   follow symbolic links
 -L <level> descend only \`level\` directories
+-d         display directories only
+-f         display full path of each file
+-x         stay on the current filesystem only
 `;
 
 function main() {
