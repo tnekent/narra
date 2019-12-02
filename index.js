@@ -2,12 +2,10 @@ const { accessSync } = require("fs");
 const { errorAndExit } = require("./util");
 const traverseDownFrom = require("./file");
 
-const usage = `
-usage: narra [-h] [-la] [-L <levels>] [<directory list>]
+const usage = `usage: narra [-h] [-la] [-L <levels>] [<directory list>]
 `;
 const help = `\
 ${usage}
-
 -h	   print this help message and exit
 -a         include dot-prefixed files
 -l	   follow symbolic links

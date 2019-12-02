@@ -2,7 +2,7 @@ const IS_FILE = 1,
     IS_DIR = 2,
     IS_LINK = 4;
 
-function errorAndExit(code, msgs) {
+function errorAndExit(code, ...msgs) {
     for (const msg of msgs)
         process.stderr.write(msg);
     process.exit(code);
