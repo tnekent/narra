@@ -1,5 +1,6 @@
 const { readdirSync, readlinkSync, lstatSync, statSync } = require("fs");
 const { IS_FILE, IS_LINK, IS_DIR, getFtype, saveIno, existsIno } = require("./util");
+const { isMatch } = require("picomatch");
 
 let filecount = 0, dircount = 0;
 let inotable = [];
@@ -7,7 +8,7 @@ let xdev;
 
 function filterDirs(ents, path, config) {
     let filtered = [];
-    let { all, dirsOnly } = config;
+    let { all, dirsOnly, pattern } = config;
 
     for (const e of ents) {
         // Works only if `e` is not a full path
@@ -28,13 +29,14 @@ function filterDirs(ents, path, config) {
                 else throw err;
             }
             desc.type |= type = getFtype(st);
-            if (dirsOnly && type & IS_FILE) continue;
+            if (type & IS_FILE && (dirsOnly || (pattern !== null && !isMatch(e, pattern)))) continue;
             desc.lpath = readlinkSync(fpath);
         } 
         if (type & IS_DIR) {
             desc.dev = st.dev;
             desc.inode = st.ino;
-        }
+        } else if (pattern !== null && !isMatch(e, pattern)) continue;
+        
         filtered.push(desc);
     }
     return filtered;

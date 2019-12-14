@@ -25,7 +25,8 @@ function main() {
             levels: -1,
             fullpath: false,
             dirsOnly: false,
-            xdev: false
+            xdev: false,
+            pattern: null
         };
     let { writer } = config,
         restF = false;
@@ -66,6 +67,13 @@ function main() {
                         break;
                     case "x":
                         config.xdev = true;
+                        break;
+                    case "P": {
+                        let p = args[n++];
+                        if (!p)
+                            errorAndExit(1, "narra: missing argument to -P\n");
+                        config.pattern = p;
+                    }
                         break;
                     default:
                         errorAndExit(1, `narra: -${letter} not implemented\n`, usage);

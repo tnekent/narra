@@ -18,5 +18,8 @@
    "repository": {
       "type": "git",
       "url": "git+https://github.com/tnekent/narra.git"
+   },
+   "dependencies": {
+      "picomatch": "^2.1.1"
    }
 }
