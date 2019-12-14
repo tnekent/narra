@@ -27,12 +27,11 @@ function filterDirs(ents, path, config) {
                 if (err.code === "ENOENT") desc.type |= IS_FILE;
                 else throw err;
             }
-            desc.type |= getFtype(st);
-            if (dirsOnly && desc.type & IS_FILE) continue;
+            desc.type |= type = getFtype(st);
+            if (dirsOnly && type & IS_FILE) continue;
             desc.lpath = readlinkSync(fpath);
-            desc.dev = st.dev;
-            desc.inode = st.ino;
-        } else if (type & IS_DIR) {
+        } 
+        if (type & IS_DIR) {
             desc.dev = st.dev;
             desc.inode = st.ino;
         }
