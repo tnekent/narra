@@ -2,17 +2,18 @@ const { accessSync } = require("fs");
 const { errorAndExit } = require("./util");
 const traverseDownFrom = require("./file");
 
-const usage = `usage: narra [-h] [-la] [-L <levels>] [<directory list>]
+const usage = `usage: narra [-h] [-la] [-L <levels>] [-P <pattern>] [<directory list>]
 `;
 const help = `\
 ${usage}
--h	   print this help message and exit
--a         include dot-prefixed files
--l	   follow symbolic links
--L <level> descend only \`level\` directories
--d         display directories only
--f         display full path of each file
--x         stay on the current filesystem only
+-h	     print this help message and exit
+-a           include dot-prefixed files
+-l	     follow symbolic links
+-L <level>   descend only \`level\` directories
+-d           display directories only
+-f           display full path of each file
+-x           stay on the current filesystem only
+-P <pattern> filter files by glob pattern
 `;
 
 function main() {

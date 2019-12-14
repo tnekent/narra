@@ -4,15 +4,18 @@ Tree, a recursive directory listing program, ported in JavaScript;
 ## Usage
 ```
 usage: narra [-h] [-la] [-L <levels>] [<directory list>]
-
--h	   print this help message and exit
--a         include dot-prefixed files
--l	   follow symbolic links
--L <level> descend only \`level\` directories
--d         display directories only
--f         display full path of each file
--x         stay on the current filesystem only
 ```
+
+| Option | Description |
+| ------ | ----------- |
+| h | Show help |
+| a | Show all files, including dot-prefixed files |
+| l | Follow symbolic links |
+| L | Takes a number N (greater than 0); descend only N directories |
+| d | Display directories only |
+| f | Display the full path of each file and directory |
+| x | Stay on the current filesystem only |
+| P | Takes a pattern and filter files by it. Uses [picomatch](https://github.com/micromatch/picomatch) internally |
 
 ## Contribution
 You can report bugs and pull requests at https://github.com/tnekent/narra.
