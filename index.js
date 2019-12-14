@@ -2,8 +2,7 @@ const { accessSync } = require("fs");
 const { errorAndExit } = require("./util");
 const traverseDownFrom = require("./file");
 
-const usage = `usage: narra [-h] [-la] [-L <levels>] [-P <pattern>] [<directory list>]
-`;
+const usage = `usage: narra [-h] [-la] [-L <levels>] [-P <pattern>] [<directory list>]\n`;
 const help = `\
 ${usage}
 -h	     print this help message and exit

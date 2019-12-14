@@ -1,9 +1,9 @@
 # Narra
-Tree, a recursive directory listing program, ported in JavaScript;
+Tree, a recursive directory listing program, ported in JavaScript
 
 ## Usage
 ```
-usage: narra [-h] [-la] [-L <levels>] [<directory list>]
+usage: narra [-h] [-adflx] [-L <levels>] [-P <pattern>] [<directory list>]
 ```
 
 | Option | Description |
