@@ -1,3 +1,6 @@
+[![License](https://img.shields.io/github/license/tnekent/morpeu)](LICENSE)
+![npm-version](https://img.shields.io/npm/v/narra)
+
 # Narra
 Tree, a recursive directory listing program, ported in JavaScript
 
