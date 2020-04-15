@@ -1,85 +1,219 @@
-const { readdirSync, readlinkSync, lstatSync, statSync } = require("fs");
-const { IS_FILE, IS_LINK, IS_DIR, getFtype, saveIno, existsIno } = require("./util");
+const { readdirSync, accessSync, readlinkSync, statSync } = require("fs");
 const { isMatch } = require("picomatch");
 
-let filecount = 0, dircount = 0;
-let inotable = [];
-let xdev;
+class EntryFilter {
+   constructor(options) {
+      this.options = options;
+   }
 
-function filterDirs(ents, path, config) {
-    let filtered = [];
-    let { all, dirsOnly, pattern } = config;
+   filter(direntlist) {
+      return direntlist.filter(dirent => {
+         return (
+            this.filterHidden(dirent) &&
+            this.filterNonDirectoryByGlob(dirent) &&
+            this.filterDirsOnly(dirent)
+         );
+      });
+   }
 
-    for (const e of ents) {
-        // Works only if `e` is not a full path
-        if (!all && e[0] === ".") continue;
+   filterDirsOnly(dirent) {
+      return this.options.dirsOnly === true && !dirent.isDirectory()
+         ? false
+         : true;
+   }
 
-        let fpath = `${path}/${e}`,
-            st = lstatSync(fpath),
-            type = getFtype(st);
-        if (dirsOnly && type & IS_FILE) continue;
-        let desc = { type, bpath: e, fpath, lpath: null, dev: null, inode: null };
-		
-        if (type & IS_LINK) {
-            try {
-                st = statSync(fpath);
-            } catch (err) {
-                // Symlink is an orphan
-                if (err.code === "ENOENT") desc.type |= IS_FILE;
-                else throw err;
-            }
-            desc.type |= type = getFtype(st);
-            if (type & IS_FILE && (dirsOnly || (pattern !== null && !isMatch(e, pattern)))) continue;
-            desc.lpath = readlinkSync(fpath);
-        } 
-        if (type & IS_DIR) {
-            desc.dev = st.dev;
-            desc.inode = st.ino;
-        } else if (pattern !== null && !isMatch(e, pattern)) continue;
-        
-        filtered.push(desc);
-    }
-    return filtered;
+   filterHidden(dirent) {
+      return this.options.a !== true && dirent.name[0] === "." ? false : true;
+   }
+
+   // Since -g by default does not filter directory names
+   filterNonDirectoryByGlob(dirent) {
+      return dirent.isDirectory() ? true : this.filterByGlob(dirent);
+   }
+
+   filterByGlob(dirent) {
+      return typeof this.options.g !== "undefined" &&
+         !isMatch(dirent.name, this.options.g)
+         ? false
+         : true;
+   }
 }
 
-function recurseDirs(path, config, prefix = "") {
-    let ents = readdirSync(path),
-        { writer, follow, levels, fullpath } = config;
+class Entry {
+   constructor(path, parentDir) {
+      this.path = path;
+      this.offsetPath = parentDir + path;
+   }
 
-    ents = filterDirs(ents, path, config);
-    for (let i = 0, len = ents.length; i < len; i++) {
-        let { type, bpath, fpath, lpath, dev, inode } = ents[i];
-        writer.write(`\n${prefix}${i === len - 1 ? "└── " : "├── "}${fullpath ? fpath : bpath}`);
+   writePath(prefix, full) {
+      const path = full ? this.offsetPath : this.path;
+      process.stdout.write(prefix + path);
+   }
 
-        if (type & IS_LINK) {
-            fpath = lpath[0] === "/" ? lpath : `${path}/${lpath}`;
-            writer.write(` -> ${lpath}`);
-        }
-
-        if (type & IS_FILE) filecount++;
-        else if (type & IS_DIR) {
-            dircount++;
-            if (xdev && dev !== xdev) continue;
-            if (type & IS_LINK) {
-                if (!follow) continue;
-                else if (existsIno(inotable, dev, inode)) {
-                    writer.write(" [recursive, not followed]");
-                    continue;
-                } else saveIno(inotable, dev, inode);
-            }
-            if (levels !== -1) config.levels = levels - 1;
-            if (levels) {
-                saveIno(inotable, dev, inode);
-                recurseDirs(fpath, config, `${prefix}${i === len - 1 ? "    " : "│   "}`);
-            }
-        }
-    }
+   static getEntryType(dirent, parentDir) {
+      return dirent.isDirectory()
+         ? new Directory(dirent.name, parentDir)
+         : dirent.isSymbolicLink()
+         ? new SymbolicLink(dirent.name, parentDir)
+         : new RegularFile(dirent.name, parentDir);
+   }
 }
 
-function traverseDownFrom(path, config) {
-    if (config.xdev) xdev = statSync(path).dev;
-    recurseDirs(path, config);
-    return [filecount, dircount];   
+class RegularFile extends Entry {}
+
+class EntryContainer extends Entry {
+   constructor(path, parentDir) {
+      super(path, parentDir);
+      this.stats = null;
+   }
+
+   getDirents() {
+      return readdirSync(this.offsetPath, { withFileTypes: true });
+   }
+
+   getDev() {
+      return this.getStats().dev;
+   }
+
+   getStats() {
+      if (this.stats === null) this.stats = statSync(this.offsetPath);
+      return this.stats;
+   }
+
+   getInode() {
+      return this.getStats().ino;
+   }
+
+   // abstract isTraversable(options);
 }
 
-module.exports = traverseDownFrom;
+class Directory extends EntryContainer {
+   isTraversable() {
+      return true;
+   }
+}
+
+class SymbolicLink extends EntryContainer {
+   writePath(prefix, full) {
+      const linkedPath = readlinkSync(this.offsetPath);
+      super.writePath(prefix, full);
+      process.stdout.write(` -> ${linkedPath}`);
+   }
+
+   writeNotFollowedRecursive() {
+      process.stdout.write(" [recursive, not followed]");
+   }
+
+   isTraversable() {
+      return this.getStats().isDirectory();
+   }
+}
+
+class DirectoryTraverser {
+   constructor(options, inodeSet) {
+      this.inodeSet = inodeSet;
+      this.options = options;
+      this.dev = null;
+      this.dircount = 0;
+      this.filecount = 0;
+   }
+
+   traverseAt(dir) {
+      DirectoryTraverser.checkDirAccess(dir);
+      dir.writePath("");
+      if (this.options.x) this.dev = dir.getDev();
+      this.traverse(dir, this.options.d - 1, "");
+   }
+
+   traverse(traversable, level, lastPrefix) {
+      const entries = this.getEntries(traversable);
+
+      for (let i = 0, { length } = entries; i < length; i++) {
+         let entry = entries[i];
+         entry.writePath(
+            `\n${lastPrefix}${i === length - 1 ? "└── " : "├── "}`,
+            this.options.f
+         );
+         this.incrementCount(entry);
+         if (this.isTraversable(entry, level)) {
+            const prefix = `${lastPrefix}${i === length - 1 ? "    " : "│   "}`,
+               nextLevel = level > 0 ? level - 1 : level;
+            this.traverse(entry, nextLevel, prefix);
+         }
+      }
+   }
+
+   incrementCount(entry) {
+      if (entry instanceof EntryContainer && entry.isTraversable())
+         this.dircount++;
+      else this.filecount++;
+   }
+
+   // eslint-disable-next-line complexity
+   isTraversable(entry, level) {
+      if (entry instanceof EntryContainer && level !== 0) {
+         const traversable =
+            this.options.l !== true && entry instanceof SymbolicLink
+               ? false
+               : entry.isTraversable();
+         return traversable && this.checkDev(entry) && this.checkInode(entry);
+      }
+      return false;
+   }
+
+   checkDev(entry) {
+      return !this.options.x ? true : entry.getDev() === this.dev;
+   }
+
+   checkInode(entry) {
+      if (this.options.l) {
+         const inode = entry.getInode();
+         if (entry instanceof SymbolicLink && this.inodeSet.has(inode)) {
+            entry.writeNotFollowedRecursive();
+            return false;
+         }
+         this.inodeSet.add(inode);
+      }
+      return true;
+   }
+
+   getEntries(traversable) {
+      return new EntryFilter(this.options)
+         .filter(traversable.getDirents())
+         .map(dirent =>
+            // We add a slash to fromDir because `readdir` does not append slashes
+            // in its results. This way we would'nt be using functions `join` or the
+            // like from the path module, which can have overhead.
+            Entry.getEntryType(dirent, `${traversable.offsetPath}/`)
+         );
+   }
+
+   // eslint-disable-next-line consistent-return
+   static checkDirAccess(dir) {
+      try {
+         return accessSync(dir.offsetPath);
+      } catch (e) {
+         if (e.code === "ENOENT")
+            process.stderr.write(" [error opening dir]\n");
+         else throw e;
+      }
+   }
+}
+
+module.exports = function (dirpaths, options) {
+   const inodeSet = new Set(),
+      traverser = new DirectoryTraverser(options, inodeSet);
+
+   for (const path of dirpaths) {
+      let dir = new Directory(path, "");
+      traverser.traverseAt(dir);
+   }
+
+   const filecount = `${traverser.filecount} file${
+         traverser.filecount !== 1 ? "s" : ""
+      }`,
+      dircount = `${traverser.dircount} director${
+         traverser.dircount !== 1 ? "ies" : "y"
+      }`;
+   process.stdout.write(`\n\n${dircount}, ${filecount}`);
+};

@@ -2,7 +2,6 @@
    "name": "narra",
    "version": "1.2.2",
    "description": "tree program in JavaScript",
-   "main": "index.js",
    "keywords": [
       "tree",
       "recursive",
@@ -10,6 +9,10 @@
       "commandline",
       "directory"
    ],
+   "scripts": {
+      "lint": "eslint *.js",
+      "lint:fix": "eslint --fix *.js"
+   },
    "bin": {
       "narra": "./index.js"
    },
@@ -21,5 +24,11 @@
    },
    "dependencies": {
       "picomatch": "^2.1.1"
+   },
+   "devDependencies": {
+      "eslint": "^6.8.0",
+      "eslint-config-prettier": "^6.10.1",
+      "eslint-plugin-prettier": "^3.1.2",
+      "prettier": "^2.0.2"
    }
 }

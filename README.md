@@ -2,28 +2,20 @@
 ![npm-version](https://img.shields.io/npm/v/narra)
 
 # Narra
-Tree, a recursive directory listing program, ported in JavaScript
+A port of the useful [tree](http://mama.indstate.edu/users/ice/tree/) directory listing program in JavaScript.
 
 ## Usage
 ```
-usage: narra [-h] [-adflx] [-L <levels>] [-P <pattern>] [<directory list>]
+narra [..options] <..directories>
 ```
 
 | Option | Description |
 | ------ | ----------- |
-| h | Show help |
-| a | Show all files, including dot-prefixed files |
-| l | Follow symbolic links |
-| L | Takes a number N (greater than 0); descend only N directories |
-| d | Display directories only |
-| f | Display the full path of each file and directory |
-| x | Stay on the current filesystem only |
-| P | Takes a pattern and filter files by it. Uses [picomatch](https://github.com/micromatch/picomatch) internally |
-
-## Contribution
-You can report bugs and pull requests at https://github.com/tnekent/narra.
-
-## Todo
-* Implement options
-* Show colors
-* Output to other formats (e.g. YAML)
+| -h, --help | Show help message. |
+| -a, --all | Include dot-prefixed files in listing. |
+| -l, --follow | Follow symbolic links. |
+| -d, --depth | Takes a number N greater than 0; descend N directories only. |
+| --dirs-only | Display directories only. |
+| -f | Display the offset path of each entry from top directory. |
+| -x | Stay on the current filesystem only. |
+| -g | Takes a glob pattern and filter files by it. Uses [picomatch](https://github.com/micromatch/picomatch) syntax and matching. Can be specified multiple times for different globs. |

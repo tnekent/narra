@@ -1,103 +1,47 @@
-const { accessSync } = require("fs");
-const { errorAndExit } = require("./util");
-const traverseDownFrom = require("./file");
+#!/usr/bin/env node
 
-const usage = `usage: narra [-h] [-la] [-L <levels>] [-P <pattern>] [<directory list>]\n`;
-const help = `\
-${usage}
--h	     print this help message and exit
--a           include dot-prefixed files
--l	     follow symbolic links
--L <level>   descend only \`level\` directories
--d           display directories only
--f           display full path of each file
--x           stay on the current filesystem only
--P <pattern> filter files by glob pattern
-`;
+const yargs = require("yargs");
+const traversePaths = require("./file");
 
-function main() {
-    let args = process.argv.slice(2),
-        paths = [],
-        config = {
-            writer: process.stdout,
-            all: false,
-            follow: false,
-            levels: -1,
-            fullpath: false,
-            dirsOnly: false,
-            xdev: false,
-            pattern: null
-        };
-    let { writer } = config,
-        restF = false;
-
-    let i = 0, n = 0, len = args.length;
-    for (; i < len; i = n) {
-        n++;
-        let arg = args[i];
-        if (!restF && arg[0] === "-" && arg[1]) {
-            for (const letter of arg.slice(1)) {
-                switch (letter) {
-                    case "h":
-                        errorAndExit(0, help);
-                        break;
-                    case "-":
-                        restF = true;
-                        break;
-                    case "a":
-                        config.all = true;
-                        break;
-                    case "l":
-                        config.follow = true;
-                        break;
-                    case "L": {
-                        let l = args[n++];
-                        if (!l)
-                            errorAndExit(1, "narra: missing argument to -L\n");
-                        else if (Number.isNaN(l = Number(l)) || --l < 0)
-                            errorAndExit(1, "narra: invalid level, must be greater than zero\n");
-                        config.levels = l;
-                    }
-                        break;
-                    case "d":
-                        config.dirsOnly = true;
-                        break;
-                    case "f":
-                        config.fullpath = true;
-                        break;
-                    case "x":
-                        config.xdev = true;
-                        break;
-                    case "P": {
-                        let p = args[n++];
-                        if (!p)
-                            errorAndExit(1, "narra: missing argument to -P\n");
-                        config.pattern = p;
-                    }
-                        break;
-                    default:
-                        errorAndExit(1, `narra: -${letter} not implemented\n`, usage);
-                }
-            }
-        } else paths.push(arg);
-    }
-    if (!paths.length) paths.push("."); 
-    let filecount, dircount;
-    for (const p of paths) {
-        try {
-            accessSync(p);  
-        } catch (e) {
-            if (e.code === "ENOENT")
-                errorAndExit(2, `${p} [error opening dir]\n`);
-            else throw e; 
-        }
-        writer.write(p);
-        [filecount, dircount] = traverseDownFrom(p, config);
-        writer.write("\n");
-    }
-    writer.write(`\n${dircount} director${dircount === 1 ? "y" : "ies"}`);
-    if (!config.dirsOnly) writer.write(`, ${filecount} file${filecount === 1 ? "" : "s"}`);
-    writer.write("\n");
+// eslint-disable-next-line max-lines-per-function
+function parseCMDArgs() {
+   return yargs
+      .usage("$0 [options..] <directories..>")
+      .options("a", {
+         alias: "all",
+         description: "Include dot-prefixed files",
+      })
+      .options("l", {
+         alias: "follow",
+         description: "Follow symbolic links",
+      })
+      .options("d", {
+         alias: "depth",
+         description: "descend N level directories",
+      })
+      .options("f", {
+         description: "display path displacement from top directory",
+      })
+      .options("x", {
+         description: "stay on the current filesystem only",
+      })
+      .options("g", {
+         description: "filter files by glob pattern",
+      })
+      .options("dirs-only", {
+         description: "list directories only",
+      })
+      .requiresArg(["d", "g"])
+      .boolean(["a", "l", "f", "x", "dirs-only"])
+      .string("g")
+      .number("d").argv;
 }
 
-main();
+function tree() {
+   const argv = parseCMDArgs(),
+      paths = argv._.length ? argv._ : ".";
+   traversePaths(paths, argv);
+   process.stdout.write("\n");
+}
+
+tree();
