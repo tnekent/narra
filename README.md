@@ -1,4 +1,4 @@
-[![License](https://img.shields.io/github/license/tnekent/morpeu)](LICENSE)
+[![License](https://img.shields.io/github/license/tnekent/narra)](LICENSE)
 ![npm-version](https://img.shields.io/npm/v/narra)
 
 # Narra
