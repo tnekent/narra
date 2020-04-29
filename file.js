@@ -209,4 +209,5 @@ module.exports = function (dirpaths, options) {
          traverser.dircount !== 1 ? "ies" : "y"
       }`;
    options.output.write(`\n\n${dircount}, ${filecount}`);
+   if (Object.is(options.output, process.stdout)) options.output.write("\n");
 };

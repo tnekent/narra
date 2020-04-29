@@ -53,7 +53,6 @@ function tree() {
    const argv = parseCMDArgs(),
       paths = argv._.length ? argv._ : ".";
    traversePaths(paths, argv);
-   process.stdout.write("\n");
 }
 
 tree();
