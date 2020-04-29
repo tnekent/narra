@@ -108,13 +108,14 @@ class DirectoryTraverser {
       this.inodeSet = inodeSet;
       this.options = options;
       this.dev = null;
+      this.writer = options.output;
       this.dircount = 0;
       this.filecount = 0;
    }
 
    traverseAt(dir) {
       DirectoryTraverser.checkDirAccess(dir);
-      process.stdout.write(dir.getPath(""));
+      this.writer.write(dir.getPath(""));
       if (this.options.x) this.dev = dir.getDev();
       this.traverse(dir, this.options.d - 1, "");
    }
@@ -125,7 +126,7 @@ class DirectoryTraverser {
       for (let i = 0, { length } = entries; i < length; i++) {
          let entry = entries[i],
             prefix = `\n${lastPrefix}${i === length - 1 ? "└── " : "├── "}`;
-         process.stdout.write(prefix + entry.getPath(this.options.f));
+         this.writer.write(prefix + entry.getPath(this.options.f));
          this.incrementCount(entry);
          if (this.isTraversable(entry, level)) {
             const prefix = `${lastPrefix}${i === length - 1 ? "    " : "│   "}`,
@@ -161,7 +162,7 @@ class DirectoryTraverser {
       if (this.options.l) {
          const inode = entry.getInode();
          if (entry instanceof SymbolicLink && this.inodeSet.has(inode)) {
-            process.stdout.write(" [recursive, not followed]");
+            this.writer.write(" [recursive, not followed]");
             return false;
          }
          this.inodeSet.add(inode);
@@ -207,5 +208,5 @@ module.exports = function (dirpaths, options) {
       dircount = `${traverser.dircount} director${
          traverser.dircount !== 1 ? "ies" : "y"
       }`;
-   process.stdout.write(`\n\n${dircount}, ${filecount}`);
+   options.output.write(`\n\n${dircount}, ${filecount}`);
 };
