@@ -98,10 +98,6 @@ class SymbolicLink extends EntryContainer {
       return `${super.getPath(full)} -> ${linkedPath}`;
    }
 
-   writeNotFollowedRecursive() {
-      process.stdout.write(" [recursive, not followed]");
-   }
-
    isTraversable() {
       return this.getStats().isDirectory();
    }
@@ -165,7 +161,7 @@ class DirectoryTraverser {
       if (this.options.l) {
          const inode = entry.getInode();
          if (entry instanceof SymbolicLink && this.inodeSet.has(inode)) {
-            entry.writeNotFollowedRecursive();
+            process.stdout.write(" [recursive, not followed]");
             return false;
          }
          this.inodeSet.add(inode);
