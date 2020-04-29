@@ -45,9 +45,8 @@ class Entry {
       this.offsetPath = parentDir + path;
    }
 
-   writePath(prefix, full) {
-      const path = full ? this.offsetPath : this.path;
-      process.stdout.write(prefix + path);
+   writePath(full) {
+      return full ? this.offsetPath : this.path;
    }
 
    static getEntryType(dirent, parentDir) {
@@ -94,10 +93,9 @@ class Directory extends EntryContainer {
 }
 
 class SymbolicLink extends EntryContainer {
-   writePath(prefix, full) {
+   writePath(full) {
       const linkedPath = readlinkSync(this.offsetPath);
-      super.writePath(prefix, full);
-      process.stdout.write(` -> ${linkedPath}`);
+      return `${super.writePath(full)} -> ${linkedPath}`;
    }
 
    writeNotFollowedRecursive() {
@@ -120,7 +118,7 @@ class DirectoryTraverser {
 
    traverseAt(dir) {
       DirectoryTraverser.checkDirAccess(dir);
-      dir.writePath("");
+      process.stdout.write(dir.writePath(""));
       if (this.options.x) this.dev = dir.getDev();
       this.traverse(dir, this.options.d - 1, "");
    }
@@ -129,11 +127,9 @@ class DirectoryTraverser {
       const entries = this.getEntries(traversable);
 
       for (let i = 0, { length } = entries; i < length; i++) {
-         let entry = entries[i];
-         entry.writePath(
-            `\n${lastPrefix}${i === length - 1 ? "└── " : "├── "}`,
-            this.options.f
-         );
+         let entry = entries[i],
+            prefix = `\n${lastPrefix}${i === length - 1 ? "└── " : "├── "}`;
+         process.stdout.write(prefix + entry.writePath(this.options.f));
          this.incrementCount(entry);
          if (this.isTraversable(entry, level)) {
             const prefix = `${lastPrefix}${i === length - 1 ? "    " : "│   "}`,
