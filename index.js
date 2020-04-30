@@ -31,6 +31,18 @@ function parseCMDArgs() {
       .options("dirs-only", {
          description: "list directories only",
       })
+      .options("output", {
+         alias: "o",
+         description: "send output to a file, truncating if it exists",
+         default: process.stdout,
+         coerce(out) {
+            if (typeof out === "string") {
+               const { createWriteStream } = require("fs");
+               return createWriteStream(out);
+            }
+            return out; // process.stdout
+         },
+      })
       .requiresArg(["d", "g"])
       .boolean(["a", "l", "f", "x", "dirs-only"])
       .string("g")
@@ -41,7 +53,6 @@ function tree() {
    const argv = parseCMDArgs(),
       paths = argv._.length ? argv._ : ".";
    traversePaths(paths, argv);
-   process.stdout.write("\n");
 }
 
 tree();

@@ -19,3 +19,4 @@ narra [..options] <..directories>
 | -f | Display the offset path of each entry from top directory. |
 | -x | Stay on the current filesystem only. |
 | -g | Takes a glob pattern and filter files by it. Uses [picomatch](https://github.com/micromatch/picomatch) syntax and matching. Can be specified multiple times for different globs. |
+| -o, --output | Takes a filename and sends output to the file (truncating if it exists). |
