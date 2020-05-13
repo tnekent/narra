@@ -34,24 +34,21 @@ function parseCMDArgs() {
       .options("output", {
          alias: "o",
          description: "send output to a file, truncating if it exists",
-         default: process.stdout,
          coerce(out) {
-            if (typeof out === "string") {
-               const { createWriteStream } = require("fs");
-               return createWriteStream(out);
-            }
-            return out; // process.stdout
+            const { createWriteStream } = require("fs");
+            return createWriteStream(out);
          },
       })
       .requiresArg(["d", "g"])
       .boolean(["a", "l", "f", "x", "dirs-only"])
-      .string("g")
+      .string(["g", "o"])
       .number("d").argv;
 }
 
 function tree() {
    const argv = parseCMDArgs(),
       paths = argv._.length ? argv._ : ".";
+   if (typeof argv.output !== "object") argv.output = process.stdout;
    traversePaths(paths, argv);
 }
 
