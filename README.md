@@ -11,7 +11,7 @@ narra [..options] <..directories>
 
 | Option | Description |
 | ------ | ----------- |
-| -h, --help | Show help message. |
+| --help | Show help message. |
 | -a, --all | Include dot-prefixed files in listing. |
 | -l, --follow | Follow symbolic links. |
 | -d, --depth | Takes a number N greater than 0; descend N directories only. |
